@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>SpamGuard 設定</title>
+  <link rel="stylesheet" href="ui.css">
+</head>
+<body>
+  <h1>SpamGuard 設定</h1>
+
+  <section>
+    <h2>基本</h2>
+    <label class="row"><input type="checkbox" id="enabled"> 新着メールを自動判定する</label>
+
+    <label class="row">判定後の動作
+      <select id="action">
+        <option value="logOnly">ログのみ（メールに手を加えない）</option>
+        <option value="tagOnly">タグを付ける</option>
+        <option value="markJunk">タグ＋Thunderbirdの迷惑マーク</option>
+        <option value="markAndMove">タグ＋迷惑マーク＋迷惑メールフォルダへ移動</option>
+      </select>
+    </label>
+    <p class="hint">導入直後は「タグを付ける」で数日運用し、ログで誤検出がないことを確認してから移動を有効にしてください。</p>
+  </section>
+
+  <section>
+    <h2>しきい値</h2>
+    <label class="row">迷惑メールと判定する点数（0-100）
+      <input type="number" id="spamThreshold" min="0" max="100">
+    </label>
+    <label class="row">グレーゾーン下限（これ未満は無条件で白）
+      <input type="number" id="grayLow" min="0" max="100">
+    </label>
+    <label class="row">グレーゾーン上限（これ以上はJevを呼ばず黒）
+      <input type="number" id="grayHigh" min="0" max="100">
+    </label>
+    <p class="hint">ローカルルールの点数がグレーゾーンに入った分だけJevへ問い合わせます。範囲を狭めるほどAPI呼び出しは減ります。</p>
+  </section>
+
+  <section>
+    <h2>Jev（TypeSafe System One）連携</h2>
+    <label class="row"><input type="checkbox" id="jevEnabled"> Jevによる本文判定を使う</label>
+    <label class="row">APIキー
+      <input type="password" id="jevApiKey" placeholder="sk-...">
+    </label>
+    <label class="row">エンドポイント
+      <input type="text" id="jevEndpoint">
+    </label>
+    <label class="row">モデル
+      <input type="text" id="jevModel">
+    </label>
+    <label class="row">本文の送信文字数上限
+      <input type="number" id="jevBodyLimit" min="200" max="20000">
+    </label>
+    <label class="row">スコア合成の重み（ローカル）
+      <input type="number" id="weightLocal" min="0" max="1" step="0.05">
+    </label>
+    <label class="row">スコア合成の重み（Jev）
+      <input type="number" id="weightJev" min="0" max="1" step="0.05">
+    </label>
+    <p class="row">
+      <button type="button" id="testJev">接続テスト</button>
+      <span id="testResult" class="hint"></span>
+    </p>
+    <p class="warn">APIキーはこのプロファイル内（storage.local）に平文で保存されます。本文の抜粋・件名・差出人情報がTypeSafeへ送信される点に留意してください。</p>
+  </section>
+
+  <section>
+    <h2>拒否リスト</h2>
+    <p class="hint">詐称ではないが読みたくない正規のメルマガ・通知を、差出人名指しで迷惑扱いにします。内容ルールでは落とせない（落とすと同じ送信元の本物の重要通知まで巻き込む）ため、この仕組みで処理します。</p>
+    <label class="row">ドメイン（1行1件。サブドメインも含めて拒否）
+      <textarea id="blockDomains" rows="4" placeholder="example.co.jp"></textarea>
+    </label>
+    <label class="row">メールアドレス（1行1件・完全一致。こちらのほうが安全）
+      <textarea id="blockAddresses" rows="6" placeholder="news-master@mail.example.co.jp"></textarea>
+    </label>
+  </section>
+
+  <section>
+    <h2>許可リスト</h2>
+    <label class="row">ドメイン（1行1件。サブドメインも含めて許可）
+      <textarea id="allowDomains" rows="5" placeholder="example.co.jp"></textarea>
+    </label>
+    <label class="row">メールアドレス（1行1件・完全一致）
+      <textarea id="allowAddresses" rows="5" placeholder="info@example.co.jp"></textarea>
+    </label>
+  </section>
+
+  <p class="actions">
+    <button type="button" id="save">保存</button>
+    <button type="button" id="reset">既定値に戻す</button>
+    <span id="saveResult" class="hint"></span>
+  </p>
+
+  <section>
+    <h2>設定のバックアップ</h2>
+    <p class="hint">アドオンを入れ直すとき、いったんアンインストールすると保存済みの設定（APIキーを含む）は消えます。更新前に書き出しておいてください。</p>
+    <p class="actions">
+      <button type="button" id="exportSettings">設定を書き出す</button>
+      <button type="button" id="importSettings">設定を読み込む</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+      <span id="backupResult" class="hint"></span>
+    </p>
+    <p class="warn">書き出したファイルにはAPIキーが平文で含まれます。保管場所に注意してください。</p>
+  </section>
+
+  <section>
+    <h2>拒否リストの候補</h2>
+    <p class="hint">判定ログの中で<strong>繰り返し迷惑と判定された差出人</strong>を拾って提示します。自動では登録しません。差出人は毎回使い捨てのアドレスを使うため（実データで98.6%が1回きり）、自動登録はほとんど効果がなく、誤検知を永続化させる副作用のほうが大きいためです。</p>
+    <p class="actions">
+      <label>この回数以上 <input type="number" id="suggestMin" min="2" max="20" value="2" style="min-width:60px"></label>
+      <button type="button" id="refreshSuggest">候補を更新</button>
+      <span id="suggestResult" class="hint"></span>
+    </p>
+    <table id="suggestTable">
+      <thead><tr><th style="width:5em">回数</th><th style="width:5em">単位</th><th>差出人</th><th style="width:16em">直近の件名</th><th style="width:6em">操作</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <p class="hint">フリーメール（gmail.com / outlook.com 等）とご自身のドメインは、正規のメールを巻き込むため候補から除外しています。</p>
+  </section>
+
+  <section>
+    <h2>判定ログ</h2>
+    <p class="actions">
+      <button type="button" id="refreshLog">再読み込み</button>
+      <button type="button" id="exportCsv">CSVで保存</button>
+      <button type="button" id="clearLog">ログを消去</button>
+      <span id="logSummary" class="hint"></span>
+    </p>
+    <table id="logTable">
+      <thead>
+        <tr>
+          <th>日時</th><th>判定</th><th>点数</th><th>経路</th>
+          <th>差出人</th><th>件名</th><th>根拠</th><th>実施</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>

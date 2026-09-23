@@ -1,0 +1,27 @@
+# ビルド成果物（配布は GitHub Releases に xpi を添付する）
+dist/
+
+# 実メールの件名・差出人を含む測定結果（公開しない）
+tools/eval-*.json
+
+# 実メールの検体
+*.eml
+*.mbox
+
+# 手元の作業記録（公開しない）
+HANDOFF.md
+TUNING-REPORT.md
+review-report-*.md
+
+# 秘密情報
+typesafe-key.txt
+*.key
+.env
+
+# Node / エディタ / OS
+node_modules/
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+.DS_Store

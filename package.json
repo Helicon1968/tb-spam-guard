@@ -1,0 +1,10 @@
+{
+  "name": "tb-spam-guard-dev",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "test": "node test/selftest.mjs",
+    "build": "node tools/build.mjs"
+  }
+}

@@ -1,0 +1,122 @@
+:root {
+  color-scheme: light dark;
+  --fg: #1a202c;
+  --bg: #ffffff;
+  --muted: #5a6474;
+  --line: #d7dce3;
+  --accent: #2b6cb0;
+  --spam: #c53030;
+  --suspect: #c05621;
+  --ham: #2f7a4d;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fg: #e6e9ef;
+    --bg: #1c1f26;
+    --muted: #a0a8b6;
+    --line: #3a4150;
+    --accent: #7fb3f0;
+    --spam: #fc8181;
+    --suspect: #f6ad55;
+    --ham: #78c9a0;
+  }
+}
+
+body {
+  font-family: "Segoe UI", "Yu Gothic UI", "Meiryo", sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--fg);
+  background: var(--bg);
+  margin: 0 auto;
+  padding: 16px;
+  max-width: 900px;
+}
+
+h1 { font-size: 18px; margin: 0 0 12px; }
+h2 { font-size: 14px; margin: 0 0 8px; color: var(--accent); }
+
+section {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+  flex-wrap: wrap;
+}
+
+.row > input[type="text"],
+.row > input[type="password"],
+.row > input[type="number"],
+.row > select {
+  margin-left: auto;
+  min-width: 220px;
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.row > input[type="number"] { min-width: 90px; }
+.row > input[type="checkbox"] { margin: 0; }
+
+textarea {
+  width: 100%;
+  font-family: Consolas, monospace;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  box-sizing: border-box;
+}
+
+button {
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  cursor: pointer;
+}
+
+button:hover { border-color: var(--accent); }
+
+.hint { color: var(--muted); font-size: 12px; margin: 4px 0; }
+.warn { color: var(--suspect); font-size: 12px; margin: 6px 0 0; }
+.actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  table-layout: fixed;
+}
+
+th, td {
+  border-bottom: 1px solid var(--line);
+  padding: 4px 6px;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+th { color: var(--muted); font-weight: 600; }
+
+.v-spam { color: var(--spam); font-weight: 700; }
+.v-suspect { color: var(--suspect); font-weight: 600; }
+.v-ham { color: var(--ham); }
+
+/* ポップアップ用 */
+body.popup { width: 480px; max-width: 480px; padding: 10px; }
+body.popup h1 { font-size: 15px; }
+body.popup section { padding: 8px 10px; margin-bottom: 8px; }
+body.popup table { font-size: 11px; }

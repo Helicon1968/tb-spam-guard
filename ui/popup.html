@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>SpamGuard</title>
+  <link rel="stylesheet" href="ui.css">
+</head>
+<body class="popup">
+  <h1>SpamGuard</h1>
+  <section>
+    <p class="hint" id="status">読み込み中...</p>
+    <p class="actions">
+      <button type="button" id="openOptions">設定とログ</button>
+      <button type="button" id="toggle">一時停止</button>
+    </p>
+  </section>
+  <section>
+    <h2>直近の判定</h2>
+    <table id="recent">
+      <thead><tr><th style="width:4.5em">判定</th><th style="width:3.5em">点数</th><th>件名</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
