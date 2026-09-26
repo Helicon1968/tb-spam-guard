@@ -221,6 +221,75 @@ const SAMPLES = [
       },
       plain: "お世話になっております。\n先日ご依頼いただいた見積書を添付いたします。"
     })
+  },
+  // --- 2026-09-26 の実運用ログの見逃し2件と、その対策で巻き込みやすい正規メール ---
+  {
+    name: "[回帰] 使い捨てドメイン（ラベルをバウンス先に流用・家庭用回線から直接送信）",
+    expect: "spam",
+    minScore: 55,
+    msg: message({
+      headers: {
+        From: "カスタマーサポート <info@kjehuf.cn-dqsb.example>",
+        Subject: "発注ご商品の納品用意が整いました",
+        "Message-ID": "<179023699900.5182.205329042316088253@kjehuf.cn-dqsb.example>",
+        "Return-Path": "<kjehuf@kjehuf.cn-dqsb.example>",
+        "List-Unsubscribe": "<https://kjehuf.cn-dqsb.example/unsubscribe/abc>",
+        Received: [
+          "from kjehuf.cn-dqsb.example (kjehuf.cn-dqsb.example [34.138.61.164]) by mx-proxy.example.jp (Postfix)",
+          "from [172.30.157.21] (c-69-180-237-15.hsd1.ga.comcast.net [69.180.237.15]) by kjehuf.cn-dqsb.example (Postfix)"
+        ],
+        "Authentication-Results": "spf=pass dkim=pass header.s=kjehuf dmarc=pass",
+        "X-Spam-Status": "Yes"
+      },
+      html: '<html><body><p>ご注文の商品の発送準備が整いました。</p><a href="https://czdebang.example/order">注文内容詳細を確認する</a></body></html>'
+    })
+  },
+  {
+    name: "[回帰] 件名で e-Tax に言及し、無関係な第三者ドメインへ誘導（グレーゾーンへ送る）",
+    expect: "spam",
+    msg: message({
+      headers: {
+        From: "お知らせ <ea@li.frankmathroom.example>",
+        Subject: "e-Tax還付金の受取手続について",
+        "Message-ID": "<Mj7WdDUGQvOoUeKtUFTRKg@geopod-ismtpd-6>",
+        "Return-Path": "<bounces+1-fei=example.jp@em7772.li.frankmathroom.example>",
+        Received: ["from s.wfbtzhsv.outbound-mail.sendgrid.net by mtrg.example.jp"]
+      },
+      html: '<html><body><p>還付金が確定いたしました。受取口座情報のご確認をお願いいたします。</p><a href="https://zhenglizhushou.example/etax">確認する</a></body></html>'
+    })
+  },
+  {
+    name: "[回帰] 送信ホストとバウンス先が一般語で一致する正規配信（mail@mail.～）",
+    expect: "ham",
+    mustNotHit: ["senderLabelEcho"],
+    msg: message({
+      headers: {
+        From: "Adobe <mail@mail.adobe.example>",
+        Subject: "PDFをWordやPowerPointに変換して、すぐ編集",
+        "Message-ID": "<k@mail.adobe.example>",
+        "Return-Path": "<mail@mail.adobe.example>",
+        Received: ["from mail.adobe.example by mail3.example.jp"],
+        "Authentication-Results": "spf=pass dkim=pass header.s=mail dmarc=pass"
+      },
+      html: '<html><body><p>新機能のご案内です。</p><a href="https://www.adobe.example/acrobat">詳細</a></body></html>'
+    })
+  },
+  {
+    name: "[回帰] 件名で他社に言及し、自社の兄弟ドメインへ誘導する正規メルマガ（pia.co.jp → pia.jp）",
+    expect: "ham",
+    mustNotHit: ["mentionThirdPartyLinks"],
+    msg: message({
+      headers: {
+        From: "チケットぴあ <tmail@pia.co.jp>",
+        Subject: "Amazonプライム・ビデオ配信記念 コンサートのお知らせ",
+        "Message-ID": "<l@mail.pia-mailer.example>",
+        "Return-Path": "<bounce@pia-mailer.example>",
+        "List-Unsubscribe": "<https://mailer-service.example/u/abc>",
+        Received: ["from mail.pia-mailer.example by mail3.example.jp"],
+        "Authentication-Results": "spf=pass dkim=pass dmarc=pass"
+      },
+      html: '<html><body><p>公演情報のご案内です。</p><a href="https://t.pia.jp/event/123">チケット情報</a></body></html>'
+    })
   }
 ];
 
@@ -238,8 +307,13 @@ for (const sample of SAMPLES) {
   // spam検体: 最低でもグレーゾーンに入り、Jevへ回るか即断されること
   // ham検体 : 迷惑と判定されないこと。グレーゾーンに入るのは設計どおりで、
   //           そこはJevの legitimate_transactional で救う想定
-  const ok = sample.expect === "spam" ? score >= s.grayLow : score < s.spamThreshold;
+  // minScore: 見逃しの回帰検体で、グレーゾーンではなく即断まで届くことを確かめる
+  // mustNotHit: 対策ルールが正規メールに立たないことを確かめる
+  const unexpected = (sample.mustNotHit || []).filter((id) => hits.some((h) => h.id === id));
+  const ok = (sample.expect === "spam" ? score >= (sample.minScore ?? s.grayLow) : score < s.spamThreshold) &&
+    unexpected.length === 0;
   if (!ok) failures++;
+  if (unexpected.length) console.log("      立ってはいけないルールが立った: " + unexpected.join(", "));
 
   console.log((ok ? "PASS" : "FAIL") + "  " + sample.name);
   console.log("      点数 " + score + " -> " + verdict + (gray ? " [Jevへ送る]" : " [ローカルで即断]"));

@@ -177,6 +177,28 @@ export const CONSUMER_ISP_DOMAINS = [
 ];
 
 /**
+ * 海外の家庭用回線の逆引き名。Received の括弧内（`from [ip] (逆引き名)`）に現れる。
+ * 2026-09 に `info@kjehuf.cn-dqsb.com` 型の使い捨てドメインが大量に届いたが、
+ * いずれも `c-69-180-*.hsd1.ga.comcast.net` から直接送られていた。
+ * 企業の配信がケーブル回線の家庭用アドレスから出ることはまず無い。
+ * 実データで確認できたものだけを置き、推測で広げない。
+ */
+export const RESIDENTIAL_HOST_PATTERNS = [
+  /^c-\d+-\d+-\d+-\d+\.hsd1\.[a-z]{2}\.comcast\.net$/
+];
+
+/**
+ * 送信ホストの先頭ラベルとして一般的な語。
+ * これらが Return-Path のローカル部と一致しても、自動生成の証拠にはしない
+ * （`mail@mail.adobe.com` や `no-reply@email.balmuda.com` のような正規配信があるため）。
+ */
+export const COMMON_SENDER_LABELS = [
+  "mail", "email", "mailer", "news", "newsletter", "info", "noreply", "no-reply",
+  "support", "contact", "notice", "notify", "service", "member", "members", "magazine",
+  "mag", "bounce", "bounces", "return", "reply", "send", "sender", "marketing", "mailing"
+];
+
+/**
  * 迷惑メールに濫用されやすいTLD。
  * 日本語の業務メールでこれらが差出人になることはまずない。
  * （.com / .net / .jp のような一般的なTLDは当然含めない）

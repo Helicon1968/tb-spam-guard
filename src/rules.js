@@ -211,6 +211,29 @@ const RULES = [
     test: (f) => f.freemailSender && f.hasJapanese && f.linkDomains.length > 0 &&
       f.foreignLinkDomains.length > 0
   },
+  // --- 以下、2026-09-26 の実運用ログの見逃し2件から追加したルール ---
+  {
+    /**
+     * `info@kjehuf.cn-dqsb.com`（Return-Path `kjehuf@kjehuf.cn-dqsb.com`）型の使い捨てドメイン。
+     * 実データでは迷惑メールフォルダの89通に立ち、受信トレイで立った正規メールは
+     * `mail@mail.adobe.com` 等の一般語だけだった（COMMON_SENDER_LABELS で除外済み）。
+     */
+    id: "senderLabelEcho",
+    label: "送信ホスト名のラベルをバウンス先にも流用",
+    weight: 18,
+    test: (f) => f.senderLabelEcho
+  },
+  {
+    /**
+     * 件名で組織に言及し、リンク先が無関係な第三者だけ（例: e-Tax還付金 → zhenglizhushou.com）。
+     * 単独では弱い証拠なので、グレーゾーンへ押し上げて Jev に判断させる程度の配点にとどめる。
+     * 10 を超えると、組織名に言及する正規メルマガ（ぴあ等、46点）がしきい値を越える恐れがある。
+     */
+    id: "mentionThirdPartyLinks",
+    label: "件名で組織に言及し、リンク先が無関係な第三者だけ",
+    weight: 10,
+    test: (f) => f.mentionThirdPartyLinks
+  },
   // --- 以下は ham 寄りの証拠（減点） ---
   {
     // 「名乗る組織と送信ドメインが一致する」ことが正当性の証拠になるのは、

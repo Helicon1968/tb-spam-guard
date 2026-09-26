@@ -121,7 +121,7 @@ Jevが見るのは文面だけなので、文面が無害なスパムには何�
 | `brandLinkMismatch` | 詐称組織の正規ドメイン以外へのリンク | +15 |
 | `hiddenTextWithBrand` | 組織を詐称しつつ不可視要素にランダム文字列 | +15 |
 | `randomFromHost` | 送信ドメインが英数字混在の自動生成らしい文字列 | +15 |
-| `consumerIspHop` | 配信経路に個人向け回線ホスト（ymobile / ocn 等） | +15 |
+| `consumerIspHop` | 配信経路に個人向け回線ホスト（ymobile / ocn 等、海外のケーブル回線 `*.hsd1.*.comcast.net`） | +15 |
 | `freemailJapaneseBulk` | 無料メールから日本語の宣伝メールが届いている | +14 |
 | `authSoftfail` | SPFが softfail | +12 |
 | `randomLocalPart` | Fromのローカル部が自動生成らしい文字列 | +12 |
@@ -137,6 +137,8 @@ Jevが見るのは文面だけなので、文面が無害なスパムには何�
 | `brandMentionMismatch` | **件名にしか**組織名が無く送信ドメインが不一致（言及のみ） | +26 |
 | `upstreamSpamFlag` | 受信サーバ（heteml等）が既にスパムと判定済み | +22 |
 | `vowellessDomain` | 送信ドメインに母音を含まないラベルがある | +18 |
+| `senderLabelEcho` | 送信ホストの先頭ラベルを Return-Path のローカル部にも流用（`info@kjehuf.example.com` ← `kjehuf@kjehuf.example.com`）。`mail` 等の一般語は除く | +18 |
+| `mentionThirdPartyLinks` | 件名だけで組織に言及し、リンク先がすべて無関係な第三者（送信ドメインの兄弟ドメインは除く） | +10 |
 | `brandMatched` | 名乗る組織と送信ドメインが**一致**（正常側の証拠・フリーメールを除く） | **-30** |
 
 **ブランド名は「名乗っている」のか「言及しているだけ」かを区別する。** 表示名に組織名があれば

@@ -6,7 +6,8 @@
  */
 
 import {
-  ABUSED_TLDS, BRANDS, CONSUMER_ISP_DOMAINS, FREEMAIL_DOMAINS, URGENCY_PATTERNS
+  ABUSED_TLDS, BRANDS, COMMON_SENDER_LABELS, CONSUMER_ISP_DOMAINS, FREEMAIL_DOMAINS,
+  RESIDENTIAL_HOST_PATTERNS, URGENCY_PATTERNS
 } from "./config.js";
 
 /** 実効的なTLDが2ラベルになる代表的なサフィックス（簡易PSL） */
@@ -310,6 +311,39 @@ function receivedHosts(values) {
 }
 
 /**
+ * Received ヘッダの括弧内にある逆引き名を取り出す。
+ * `from [172.30.157.21] (c-69-180-237-15.hsd1.ga.comcast.net [69.180.237.15])` のように、
+ * 送信元が HELO を IP で名乗ると receivedHosts() では拾えず、実際の回線が見えないため。
+ */
+function receivedRdnsHosts(values) {
+  const hosts = [];
+  for (const line of values) {
+    for (const m of String(line).matchAll(/\(\s*([A-Za-z0-9._-]+\.[A-Za-z]{2,})\s*(?:\[[0-9A-Fa-f.:]+\])?\s*\)/g)) {
+      hosts.push(m[1].toLowerCase());
+    }
+  }
+  return [...new Set(hosts)];
+}
+
+/**
+ * 送信ホストの先頭ラベルが、Return-Path のローカル部にもそのまま使われているか。
+ *
+ * 使い捨てドメインのスパマーは `info@kjehuf.cn-dqsb.com`（Return-Path は
+ * `kjehuf@kjehuf.cn-dqsb.com`）のように、1通ごとに生成したラベルを
+ * サブドメインとバウンス先の両方に流用する。ラベル自体は `kjehuf` `swhups` のように
+ * 母音を含むことが多く、発音可否の判定（looksUnpronounceable）では拾えない。
+ * `mail@mail.adobe.com` のような一般語は COMMON_SENDER_LABELS で除外する。
+ */
+function senderLabelEcho(fromHost, fromDomain, returnPathAddress) {
+  const host = String(fromHost || "");
+  if (!fromDomain || !host.endsWith("." + fromDomain)) return false;
+  const label = host.slice(0, -(fromDomain.length + 1)).split(".")[0];
+  if (!/^[a-z]{4,12}$/.test(label) || COMMON_SENDER_LABELS.includes(label)) return false;
+  const rpLocal = String(returnPathAddress || "").split("@")[0].toLowerCase();
+  return rpLocal === label;
+}
+
+/**
  * メッセージ1通分の特徴量を作る。
  * @param {object} full messages.getFull() の戻り値
  * @param {object} meta messages.get() の戻り値（subject/author のフォールバック用）
@@ -333,6 +367,7 @@ export function extractFeatures(full, meta = {}) {
   const feedbackId = header(full, "feedback-id");
   const received = headerAll(full, "received");
   const hops = receivedHosts(received);
+  const rdnsHosts = receivedRdnsHosts(received);
 
   const bodies = collectBodies(full);
   const html = bodies.html.join("\n");
@@ -390,7 +425,10 @@ export function extractFeatures(full, meta = {}) {
     feedbackId,
     receivedCount: received.length,
     hops,
-    consumerIspHops: hops.filter((h) => CONSUMER_ISP_DOMAINS.some((d) => isUnderDomain(h, d))),
+    consumerIspHops: [
+      ...hops.filter((h) => CONSUMER_ISP_DOMAINS.some((d) => isUnderDomain(h, d))),
+      ...rdnsHosts.filter((h) => RESIDENTIAL_HOST_PATTERNS.some((re) => re.test(h)))
+    ],
     bodyText,
     bodyHtml: html,
     hasHtml: Boolean(html.trim()),
@@ -442,6 +480,17 @@ export function extractFeatures(full, meta = {}) {
     unpronounceableDomain: looksUnpronounceable(fromLabel) || hasRandomLabel(from.host),
     /** ホスト名に母音を含まないラベルがある（機械生成の強い証拠） */
     vowellessDomain: hasVowellessLabel(from.host),
+    /** 送信ホストの先頭ラベルが Return-Path のローカル部に流用されている（使い捨てドメインの型） */
+    senderLabelEcho: senderLabelEcho(from.host, fromDomain, returnPath.address),
+    /**
+     * 件名だけで組織に言及し、本文のリンクがすべて「送信ドメインでも組織の正規ドメインでもない」
+     * 第三者を指している。e-Tax を件名に入れて無関係なドメインへ誘導する型。
+     * `pia.co.jp` → `pia.jp` のように先頭ラベルが同じ兄弟ドメインは第三者と見なさない。
+     */
+    mentionThirdPartyLinks: brands.length > 0 && !brandMatched && brandsInDisplay.length === 0 &&
+      linkDomains.length > 0 &&
+      linkDomains.every((d) => foreignLinkDomains.includes(d) &&
+        d.split(".")[0] !== fromDomain.split(".")[0]),
     /** 受信サーバ（heteml等）が既にスパムと判定している */
     upstreamSpam,
     /** 濫用されやすいTLD */

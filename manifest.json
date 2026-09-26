@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SpamGuard – AI-assisted Phishing Filter",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "description": "ヘッダ構造のルールでフィッシング／迷惑メールを判定し、迷うメールだけ TypeSafe の Jev（任意）に問い合わせます。TypeSafe の公式製品ではありません。",
   "browser_specific_settings": {
     "gecko": {
